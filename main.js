@@ -1,4 +1,4 @@
-import * as d3 from 'd3';
+import * as d3 from "d3";
 import * as d3Sankey from "d3-sankey";
 
 const width = 928;
@@ -22,8 +22,100 @@ const sankey = d3Sankey.sankey()
   .extent([[1, 5], [width - 1, height - 5]]);
 
 
+
+let nodeCounter = 0;
+
+
+function getNodesJMUStudent(data) {
+  const costsArr = data["student-costs"];
+  const nodes = [];
+
+  for (let i = 0; i < costsArr.length; i++) {
+    const item = costsArr[i];
+
+    const node = {
+      name: nodeCounter++,
+      title: item["name"],
+    };
+
+    nodes.push(node);
+  }
+  return nodes;
+}
+
+function getNodesFallSpring(data) {
+  const costsArr = data["student-costs"];
+  const nodes = [];
+
+  for (let i = 0; i < costsArr.length; i++) {
+    if (!costsArr[i].hasOwnProperty("semester")) {
+      break;
+    }
+
+    const item = costsArr[i];
+
+    const node = {
+      name: nodeCounter++,
+      title: item["name"],
+      category: item["semester"],
+    };
+
+
+    if (node.category === "fall") {
+      nodes.unshift(node);
+    } else {
+      nodes.push(node);
+    }    
+  }
+
+  return nodes;
+}
+
+function getNodesItemized(data) {
+  const costsArr = data["student-costs"];
+  const nodes = [];
+
+  for (let i = 0; i < costsArr.length; i++) {
+    const item = costsArr[i];
+
+    if (!item.type === "student itemized") {
+      break;
+    }
+
+    const node = {
+      name: nodeCounter++,
+      title: item["name"],
+    };
+    nodes.push(node);
+  }
+  return nodes;
+}
+function getNodes(data) {
+  const leftmost = getNodesJMUStudent(data);
+  const middle = getNodesFallSpring(data);
+  const rightmost = getNodesItemized(data);
+
+  return leftmost.concat(middle).concat(rightmost);
+}
+
+//TODO: add links 
+
+
+function forDiagram1(data) {
+
+  const nodes = getNodes(data);
+  const links = getLinks(data);
+
+  return {nodes, links};
+}
+
+
 async function init() {
-  const data = await d3.json("data/data_sankey.json");
+  /* const data = await d3.json("data/data_sankey.json"); */
+
+  const jmuData = await d3.json("data/jmu.json");
+
+  const data = forDiagram1(jmuData);
   // Applies it to the data. We make a copy of the nodes and links objects
   // so as to avoid mutating the original.
   const { nodes, links } = sankey({
